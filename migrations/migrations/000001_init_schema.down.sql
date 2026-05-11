@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS stock_movements;
+DROP TABLE IF EXISTS stocks;
+DROP TABLE IF EXISTS items;

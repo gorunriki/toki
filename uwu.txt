@@ -1,0 +1,614 @@
+=== USERS ===
+Fungsi: Menyimpan akun pengguna sistem (admin, kasir, owner)
+
+Kolom:
+- id
+- name
+- email
+- password
+- role (admin / kasir / owner)
+- created_at
+
+
+=== ITEMS ===
+Fungsi: Master data semua barang
+
+Kolom:
+- id
+- name
+- sku (kode unik barang)
+- barcode (opsional, untuk scan)
+- price_sell (harga jual)
+- price_buy (harga beli)
+- created_at
+- updated_at
+
+
+=== STOCKS ===
+Fungsi: Menyimpan jumlah stok terkini (source of truth)
+
+Kolom:
+- id
+- item_id (relasi ke items)
+- quantity (jumlah stok saat ini)
+- location_id (opsional)
+- updated_at
+
+Catatan:
+- 1 item = 1 data di tabel ini
+
+
+=== STOCK_MOVEMENTS ===
+Fungsi: Mencatat semua perubahan stok (WAJIB untuk tracking)
+
+Kolom:
+- id
+- item_id
+- type (IN / OUT / ADJUST)
+- qty
+- reference_type (INBOUND / SALE / OPNAME)
+- reference_id
+- created_at
+
+Catatan:
+- Setiap perubahan stok wajib masuk ke tabel ini
+
+
+=== INBOUNDS ===
+Fungsi: Header transaksi barang masuk (restock)
+
+Kolom:
+- id
+- created_by (user)
+- note
+- created_at
+
+
+=== INBOUND_ITEMS ===
+Fungsi: Detail barang yang masuk dalam 1 transaksi
+
+Kolom:
+- id
+- inbound_id
+- item_id
+- qty
+- price_buy
+
+
+=== SALES ===
+Fungsi: Header transaksi penjualan (POS)
+
+Kolom:
+- id
+- total_price
+- paid_amount
+- change_amount
+- created_by (kasir)
+- created_at
+
+
+=== SALES_ITEMS ===
+Fungsi: Detail barang yang dijual
+
+Kolom:
+- id
+- sale_id
+- item_id
+- qty
+- price_sell
+- subtotal
+
+
+=== STOCK_OPNAMES (OPSIONAL) ===
+Fungsi: Header audit stok
+
+Kolom:
+- id
+- created_by
+- created_at
+
+
+=== STOCK_OPNAME_ITEMS (OPSIONAL) ===
+Fungsi: Detail hasil audit stok
+
+Kolom:
+- id
+- stock_opname_id
+- item_id
+- system_qty (stok di sistem)
+- actual_qty (stok fisik)
+- difference (selisih)
+
+
+=== LOCATIONS (OPSIONAL) ===
+Fungsi: Menyimpan lokasi penyimpanan barang
+
+Kolom:
+- id
+- name (contoh: Rak A, Gudang Belakang)
+
+
+=== RINGKASAN FLOW ===
+
+Restock:
+- inbounds
+- inbound_items
+- update stocks (+)
+- insert stock_movements (IN)
+
+Penjualan:
+- sales
+- sales_items
+- update stocks (-)
+- insert stock_movements (OUT)
+
+Stock opname:
+- stock_opnames
+- stock_opname_items
+- update stocks (adjust)
+- insert stock_movements (ADJUST)
+
+
+Backend   : Go (Fiber/Gin)
+Database  : PostgreSQL
+Cache     : Redis (optional)
+Frontend  : React + Tailwind
+Scanner   : Web (basic) / Flutter (advanced)
+Auth      : JWT
+Infra     : Docker + VPS
+Testing   : Testify + Postman + k6
+
+wms-pos/
+├── cmd/
+│   └── api/
+│       └── main.go
+│
+├── internal/
+│   ├── domain/
+│   │   ├── item/
+│   │   │   ├── entity.go
+│   │   │   └── repository.go
+│   │   ├── stock/
+│   │   │   ├── entity.go
+│   │   │   └── repository.go
+│   │   ├── sale/
+│   │   │   ├── entity.go
+│   │   │   └── repository.go
+│   │   └── inbound/
+│   │       ├── entity.go
+│   │       └── repository.go
+│   │
+│   ├── usecase/
+│   │   ├── item/
+│   │   │   └── usecase.go
+│   │   ├── stock/
+│   │   │   └── usecase.go
+│   │   ├── sale/
+│   │   │   └── usecase.go
+│   │   └── inbound/
+│   │       └── usecase.go
+│   │
+│   ├── repository/
+│   │   ├── postgres/
+│   │   │   ├── item_repository.go
+│   │   │   ├── stock_repository.go
+│   │   │   ├── sale_repository.go
+│   │   │   └── inbound_repository.go
+│   │
+│   ├── delivery/
+│   │   └── http/
+│   │       ├── handler/
+│   │       │   ├── item_handler.go
+│   │       │   ├── stock_handler.go
+│   │       │   ├── sale_handler.go
+│   │       │   └── inbound_handler.go
+│   │       └── router.go
+│   │
+│   ├── infrastructure/
+│   │   ├── database/
+│   │   │   └── postgres.go
+│   │   ├── config/
+│   │   │   └── config.go
+│   │   └── logger/
+│   │       └── logger.go
+│
+├── pkg/
+│   ├── response/
+│   │   └── response.go
+│   └── utils/
+│       └── helper.go
+│
+├── migrations/
+│
+├── go.mod
+└── go.sum
+
+=== ROADMAP IMPLEMENTASI WMS + POS (UMKM) ===
+
+PHASE 0 — SETUP FONDASI
+Tujuan:
+- Project bisa jalan dan connect ke database
+
+Task:
+- init project Go (go mod init)
+- setup clean architecture folder
+- setup config (env)
+- koneksi PostgreSQL
+- setup router (Fiber/Gin)
+- buat endpoint /health
+
+Output:
+- server running
+- database connected
+
+
+PHASE 1 — MASTER DATA (ITEM)
+Tujuan:
+- Bisa manage data barang
+
+Task:
+- create item
+- get list item
+- update item
+- delete item
+- saat create item → auto insert ke stocks (qty = 0)
+
+Output:
+- item CRUD berjalan
+- stok awal terbentuk
+
+
+PHASE 2 — STOCK BASIC
+Tujuan:
+- Sistem punya data stok yang valid
+
+Task:
+- get stock by item
+- validasi stok tidak boleh minus
+- setup tabel stock_movements (belum full dipakai)
+
+Output:
+- stok bisa dilihat
+- validasi dasar tersedia
+
+
+PHASE 3 — INBOUND (RESTOCK)
+Tujuan:
+- Barang bisa masuk ke sistem
+
+Task:
+- create inbound
+- create inbound_items
+- update stocks (+qty)
+- insert stock_movements (type = IN)
+- gunakan DB transaction
+
+Output:
+- restock berjalan
+- stok bertambah otomatis
+
+
+PHASE 4 — SALES (POS CORE)
+Tujuan:
+- Barang bisa dijual
+
+Task:
+- create sales
+- create sales_items
+- validasi stok cukup
+- update stocks (-qty)
+- insert stock_movements (type = OUT)
+- gunakan DB transaction
+
+Output:
+- transaksi penjualan berjalan
+- stok berkurang sesuai penjualan
+
+
+PHASE 5 — INTEGRITY & SAFETY
+Tujuan:
+- Sistem aman dari error dan race condition
+
+Task:
+- gunakan DB transaction di inbound & sales
+- implement row locking (SELECT FOR UPDATE)
+- handle error dengan jelas
+- pastikan tidak ada stok minus
+
+Output:
+- stok konsisten
+- aman untuk multi user
+
+
+PHASE 6 — HISTORY & REPORT
+Tujuan:
+- Bisa lihat data transaksi dan laporan
+
+Task:
+- get inbound history
+- get sales history
+- report sederhana:
+  - total penjualan harian
+  - stok tersisa
+
+Output:
+- owner bisa monitoring
+
+
+PHASE 7 — STOCK OPNAME (OPSIONAL)
+Tujuan:
+- Sinkronisasi stok sistem dan fisik
+
+Task:
+- create stock_opname
+- input actual_qty
+- hitung selisih
+- update stocks
+- insert stock_movements (type = ADJUST)
+
+Output:
+- stok bisa dikoreksi
+
+
+PHASE 8 — FRONTEND (ADMIN + POS)
+Tujuan:
+- Sistem bisa digunakan user
+
+Task:
+- halaman item management
+- halaman POS (scan / klik cepat)
+- halaman stock
+- halaman history
+
+Output:
+- UI siap dipakai
+
+
+PHASE 9 — SCANNER (OPSIONAL)
+Tujuan:
+- Mempercepat input barang
+
+Task:
+- implement scan barcode/QR via web
+- optional: mobile app (Flutter)
+
+Output:
+- input lebih cepat
+
+
+PHASE 10 — DEPLOYMENT
+Tujuan:
+- Sistem bisa digunakan secara real
+
+Task:
+- dockerize aplikasi
+- deploy ke VPS
+- setup database production
+- setup backup database
+
+Output:
+- aplikasi live
+
+
+=== PRIORITAS CEPAT (MVP) ===
+
+1. setup project
+2. item + stock
+3. inbound (restock)
+4. sales (POS)
+5. stock_movements
+6. report sederhana
+
+
+=== CORE RULES (WAJIB) ===
+
+- setiap perubahan stok → wajib insert ke stock_movements
+- semua transaksi (inbound & sales) → pakai DB transaction
+- stok tidak boleh minus
+- logic bisnis hanya di usecase (bukan di handler)
+
+
+=== GOAL AKHIR ===
+
+Barang masuk → tercatat
+Barang dijual → stok berkurang
+Stok selalu akurat
+
+
+=== ENDPOINT + FUNGSI + URUTAN DEVELOPMENT (WMS + POS UMKM) ===
+
+BASE URL: /api/v1
+
+
+========================
+STEP 1 — AUTH (BASIC)
+========================
+
+POST /auth/login
+Fungsi:
+- login user
+- return JWT token
+
+GET /auth/me
+Fungsi:
+- ambil data user login
+
+
+========================
+STEP 2 — ITEMS (MASTER DATA)
+========================
+
+POST /items
+Fungsi:
+- create item baru
+- otomatis create stock (qty = 0)
+
+GET /items
+Fungsi:
+- list semua item
+
+GET /items/:id
+Fungsi:
+- detail item
+
+PUT /items/:id
+Fungsi:
+- update item
+
+DELETE /items/:id
+Fungsi:
+- hapus item
+
+
+========================
+STEP 3 — STOCK (VIEW)
+========================
+
+GET /stocks
+Fungsi:
+- lihat semua stok barang
+
+GET /stocks/:item_id
+Fungsi:
+- lihat stok per item
+
+
+========================
+STEP 4 — INBOUND (RESTOCK)
+========================
+
+POST /inbounds
+Fungsi:
+- create transaksi barang masuk (header + items)
+- update stock (+qty)
+- insert stock_movements (type = IN)
+
+GET /inbounds
+Fungsi:
+- list transaksi inbound
+
+GET /inbounds/:id
+Fungsi:
+- detail inbound + items
+
+CATATAN:
+- wajib pakai DB transaction
+
+
+========================
+STEP 5 — SALES (POS CORE)
+========================
+
+POST /sales
+Fungsi:
+- create transaksi penjualan
+- cek stok cukup
+- update stock (-qty)
+- insert stock_movements (type = OUT)
+
+GET /sales
+Fungsi:
+- list transaksi sales
+
+GET /sales/:id
+Fungsi:
+- detail sales
+
+CATATAN:
+- wajib pakai DB transaction
+- stok tidak boleh minus
+
+
+========================
+STEP 6 — HISTORY (MONITORING)
+========================
+
+GET /inbounds
+Fungsi:
+- melihat riwayat barang masuk
+
+GET /sales
+Fungsi:
+- melihat riwayat penjualan
+
+
+========================
+STEP 7 — REPORT
+========================
+
+GET /reports/sales/daily
+Fungsi:
+- total penjualan per hari
+
+GET /reports/stocks
+Fungsi:
+- laporan stok saat ini
+
+
+========================
+STEP 8 — STOCK OPNAME (OPSIONAL)
+========================
+
+POST /stock-opnames
+Fungsi:
+- input hasil hitung stok fisik
+- bandingkan dengan sistem
+- update stock (adjust)
+- insert stock_movements (type = ADJUST)
+
+GET /stock-opnames
+Fungsi:
+- lihat riwayat opname
+
+
+========================
+CORE FLOW SISTEM
+========================
+
+RESTOCK:
+POST /inbounds
+→ tambah stock
+→ insert movement (IN)
+
+PENJUALAN:
+POST /sales
+→ cek stock
+→ kurangi stock
+→ insert movement (OUT)
+
+OPNAME:
+POST /stock-opnames
+→ adjust stock
+→ insert movement (ADJUST)
+
+
+========================
+PRIORITAS IMPLEMENTASI (WAJIB)
+========================
+
+1. auth (simple)
+2. items + auto create stock
+3. stock view
+4. inbound (restock)
+5. sales (POS)
+6. stock_movements (harus aktif di inbound & sales)
+7. report sederhana
+
+
+========================
+RULES PENTING
+========================
+
+- setiap perubahan stok → wajib insert ke stock_movements
+- inbound & sales → wajib pakai DB transaction
+- stok tidak boleh minus
+- logic bisnis hanya di usecase (bukan handler)
+
+
+========================
+GOAL AKHIR
+========================
+
+barang masuk → tercatat
+barang dijual → stok berkurang
+stok selalu akurat
