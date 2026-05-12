@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func NewRouter(itemHandler *handler.ItemHandler, stockHandler *handler.StockHandler) *fiber.App {
+func NewRouter(itemHandler *handler.ItemHandler, stockHandler *handler.StockHandler, inboundHandler *handler.InboundHandler) *fiber.App {
 	app := fiber.New()
 
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -23,6 +23,8 @@ func NewRouter(itemHandler *handler.ItemHandler, stockHandler *handler.StockHand
 	api.Delete("items/:id", itemHandler.Delete)
 
 	api.Get("/stocks/:item_id", stockHandler.GetStock)
+
+	api.Post("/inbounds", inboundHandler.Create)
 
 	return app
 }

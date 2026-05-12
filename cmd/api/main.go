@@ -8,6 +8,7 @@ import (
 	"toki/internal/infrastructure/config"
 	"toki/internal/infrastructure/database"
 	"toki/internal/repository/postgres"
+	inboundUC "toki/internal/usecase/inbound"
 	itemUC "toki/internal/usecase/item"
 	stockUC "toki/internal/usecase/stock"
 )
@@ -26,7 +27,11 @@ func main() {
 	stockUC := stockUC.NewUsecase(stockRepo, db)
 	stockHandler := handler.NewStockHandler(stockUC)
 
-	app := http.NewRouter(itemHandler, stockHandler)
+	inboundRepo := postgres.NewInboundRepository()
+	inboundUC := inboundUC.NewUsecase(inboundRepo, db)
+	inboundHandler := handler.NewInboundHandler(inboundUC)
+
+	app := http.NewRouter(itemHandler, stockHandler, inboundHandler)
 
 	log.Println("🚀 Server running on port", cfg.AppPort)
 	log.Fatal(app.Listen(":" + cfg.AppPort))
