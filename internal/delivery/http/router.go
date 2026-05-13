@@ -6,6 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	middleware "toki/internal/delivery/http/middleware"
+
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func NewRouter(itemHandler *handler.ItemHandler, stockHandler *handler.StockHandler, inboundHandler *handler.InboundHandler, salesHandler *handler.SalesHandler, reportHandler *handler.ReportHandler, authHandler *handler.AuthHandler) *fiber.App {
@@ -16,6 +18,12 @@ func NewRouter(itemHandler *handler.ItemHandler, stockHandler *handler.StockHand
 			"status": "OK",
 		})
 	})
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:3000",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+	}))
 
 	api := app.Group("/api/v1")
 	// api.Post("/items", itemHandler.Create)

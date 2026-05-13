@@ -24,6 +24,7 @@ func (r *reportRepository) GetStocks(
 	SELECT
 		items.id,
 		items.name,
+		items.price_sell,
 		stocks.quantity
 	FROM stocks
 	JOIN items ON items.id = stocks.item_id
@@ -40,11 +41,13 @@ func (r *reportRepository) GetStocks(
 	var reports []report.StockReport
 
 	for rows.Next() {
+
 		var rep report.StockReport
 
 		err := rows.Scan(
 			&rep.ItemID,
 			&rep.ItemName,
+			&rep.PriceSell,
 			&rep.Stock,
 		)
 
