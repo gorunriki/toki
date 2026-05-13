@@ -8,6 +8,7 @@ import (
 )
 
 func NewPostgres(dbUrl string) *pgxpool.Pool {
+	log.Println(dbUrl)
 	db, err := pgxpool.New(context.Background(), dbUrl)
 	if err != nil {
 		log.Fatal("Failed connect DB:", err)

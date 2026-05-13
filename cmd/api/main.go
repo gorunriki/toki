@@ -8,6 +8,7 @@ import (
 	"toki/internal/infrastructure/config"
 	"toki/internal/infrastructure/database"
 	"toki/internal/repository/postgres"
+
 	authUC "toki/internal/usecase/auth"
 	inboundUC "toki/internal/usecase/inbound"
 	itemUC "toki/internal/usecase/item"
@@ -20,34 +21,99 @@ func main() {
 	cfg := config.Load()
 
 	db := database.NewPostgres(cfg.DBUrl)
-	_ = db
 
+	// ITEM
 	itemRepo := postgres.NewItemRepository(db)
-	itemUC := itemUC.NewUsecase(itemRepo, db)
-	itemHandler := handler.NewItemHandler(itemUC)
 
-	stockRepo := postgres.NewStockRepository(db)
-	stockUC := stockUC.NewUsecase(stockRepo, db)
-	stockHandler := handler.NewStockHandler(stockUC)
+	itemUsecase := itemUC.NewUsecase(
+		itemRepo,
+		db,
+	)
 
+	itemHandler := handler.NewItemHandler(
+		itemUsecase,
+	)
+
+	// STOCK
+	stockRepo := postgres.NewStockRepository(
+		db,
+	)
+
+	stockUsecase := stockUC.NewUsecase(
+		stockRepo,
+	)
+
+	stockHandler := handler.NewStockHandler(
+		stockUsecase,
+	)
+
+	// INBOUND
 	inboundRepo := postgres.NewInboundRepository()
-	inboundUC := inboundUC.NewUsecase(inboundRepo, db)
-	inboundHandler := handler.NewInboundHandler(inboundUC)
 
+	inboundUsecase := inboundUC.NewUsecase(
+		inboundRepo,
+		stockRepo,
+		db,
+	)
+
+	inboundHandler := handler.NewInboundHandler(
+		inboundUsecase,
+	)
+
+	// SALES
 	salesRepo := postgres.NewSalesRepository()
-	salesUC := salesUC.NewUsecase(salesRepo, db)
-	salesHandler := handler.NewSalesHandler(salesUC)
 
-	reportRepo := postgres.NewReportRepository(db)
-	reportUC := reportUC.NewUsecase(reportRepo)
-	reportHandler := handler.NewReportHandler(reportUC)
+	salesUsecase := salesUC.NewUsecase(
+		salesRepo,
+		db,
+	)
 
-	userRepo := postgres.NewUserRepository(db)
-	authUC := authUC.NewUsecase(userRepo)
-	authHandler := handler.NewAuthHandler(authUC)
+	salesHandler := handler.NewSalesHandler(
+		salesUsecase,
+	)
 
-	app := http.NewRouter(itemHandler, stockHandler, inboundHandler, salesHandler, reportHandler, authHandler)
+	// REPORT
+	reportRepo := postgres.NewReportRepository(
+		db,
+	)
 
-	log.Println("🚀 Server running on port", cfg.AppPort)
-	log.Fatal(app.Listen(":" + cfg.AppPort))
+	reportUsecase := reportUC.NewUsecase(
+		reportRepo,
+	)
+
+	reportHandler := handler.NewReportHandler(
+		reportUsecase,
+	)
+
+	// AUTH
+	userRepo := postgres.NewUserRepository(
+		db,
+	)
+
+	authUsecase := authUC.NewUsecase(
+		userRepo,
+	)
+
+	authHandler := handler.NewAuthHandler(
+		authUsecase,
+	)
+
+	// ROUTER
+	app := http.NewRouter(
+		itemHandler,
+		stockHandler,
+		inboundHandler,
+		salesHandler,
+		reportHandler,
+		authHandler,
+	)
+
+	log.Println(
+		"🚀 Server running on port",
+		cfg.AppPort,
+	)
+
+	log.Fatal(
+		app.Listen(":" + cfg.AppPort),
+	)
 }

@@ -12,23 +12,69 @@ type stockRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewStockRepository(db *pgxpool.Pool) stock.Repository {
+func NewStockRepository(
+	db *pgxpool.Pool,
+) stock.Repository {
+
 	return &stockRepository{db}
 }
 
-func (r *stockRepository) GetByItemID(ctx context.Context, itemID int) (int, error) {
+func (r *stockRepository) GetByItemID(
+	ctx context.Context,
+	itemID int,
+) (int, error) {
+
 	var qty int
-	err := r.db.QueryRow(ctx,
+
+	err := r.db.QueryRow(
+		ctx,
 		`SELECT quantity FROM stocks WHERE item_id=$1`,
 		itemID,
 	).Scan(&qty)
+
 	return qty, err
 }
 
-func (r *stockRepository) UpdateQuantity(ctx context.Context, itemID int, qty int) error {
-	_, err := r.db.Exec(ctx,
+func (r *stockRepository) UpdateQuantity(
+	ctx context.Context,
+	itemID int,
+	qty int,
+) error {
+
+	_, err := r.db.Exec(
+		ctx,
 		`UPDATE stocks SET quantity=$1 WHERE item_id=$2`,
-		qty, itemID,
+		qty,
+		itemID,
 	)
+
+	return err
+}
+
+func (r *stockRepository) AddStock(
+	ctx context.Context,
+	itemID int,
+	qty int,
+) error {
+
+	query := `
+	INSERT INTO stocks (
+		item_id,
+		quantity
+	)
+	VALUES ($1, $2)
+
+	ON CONFLICT (item_id)
+	DO UPDATE SET
+	quantity = stocks.quantity + EXCLUDED.quantity
+	`
+
+	_, err := r.db.Exec(
+		ctx,
+		query,
+		itemID,
+		qty,
+	)
+
 	return err
 }

@@ -2,40 +2,37 @@ package stock
 
 import (
 	"context"
-	"errors"
 
-	"toki/internal/domain/stock"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	domainStock "toki/internal/domain/stock"
 )
 
 type Usecase interface {
-	GetStock(ctx context.Context, itemID int) (int, error)
-	DecreaseStock(ctx context.Context, itemID int, qty int) error
+	GetStock(
+		ctx context.Context,
+		itemID int,
+	) (int, error)
 }
 
-type stockUsecase struct {
-	repo stock.Repository
-	db   *pgxpool.Pool
+type usecase struct {
+	repo domainStock.Repository
 }
 
-func NewUsecase(r stock.Repository, db *pgxpool.Pool) Usecase {
-	return &stockUsecase{r, db}
-}
+func NewUsecase(
+	repo domainStock.Repository,
+) Usecase {
 
-func (u *stockUsecase) GetStock(ctx context.Context, itemID int) (int, error) {
-	return u.repo.GetByItemID(ctx, itemID)
-}
-
-func (u *stockUsecase) DecreaseStock(ctx context.Context, itemID int, qty int) error {
-	current, err := u.repo.GetByItemID(ctx, itemID)
-	if err != nil {
-		return err
+	return &usecase{
+		repo: repo,
 	}
+}
 
-	if current < qty {
-		return errors.New("stock not enough")
-	}
+func (u *usecase) GetStock(
+	ctx context.Context,
+	itemID int,
+) (int, error) {
 
-	return u.repo.UpdateQuantity(ctx, itemID, current-qty)
+	return u.repo.GetByItemID(
+		ctx,
+		itemID,
+	)
 }

@@ -2,110 +2,191 @@ package handler
 
 import (
 	"strconv"
-	domain "toki/internal/domain/item"
-	uc "toki/internal/usecase/item"
+
+	"toki/internal/domain/item"
+	itemUC "toki/internal/usecase/item"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type ItemHandler struct {
-	uc uc.Usecase
+	uc itemUC.Usecase
 }
 
-func NewItemHandler(uc uc.Usecase) *ItemHandler {
-	return &ItemHandler{uc}
-}
+func NewItemHandler(
+	uc itemUC.Usecase,
+) *ItemHandler {
 
-func (h *ItemHandler) Create(c *fiber.Ctx) error {
-	var req struct {
-		Name      string  `json:"name"`
-		SKU       string  `json:"sku"`
-		PriceSell float64 `json:"price_sell"`
-		PriceBuy  float64 `json:"price_buy"`
+	return &ItemHandler{
+		uc: uc,
 	}
+}
+
+func (h *ItemHandler) Create(
+	c *fiber.Ctx,
+) error {
+
+	var req item.Item
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "invalid request",
-		})
+		return c.Status(400).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
-	if req.Name == "" || req.SKU == "" {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "name and sku required",
-		})
-	}
+	err := h.uc.Create(
+		c.Context(),
+		&req,
+	)
 
-	err := h.uc.Create(c.Context(), &domain.Item{
-		Name:      req.Name,
-		SKU:       req.SKU,
-		PriceSell: req.PriceSell,
-		PriceBuy:  req.PriceBuy,
-	})
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(500).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
-	return c.JSON(fiber.Map{
-		"message": "item created",
-	})
+	return c.JSON(
+		fiber.Map{
+			"message": "item created",
+		},
+	)
 }
 
-func (h *ItemHandler) FindAll(c *fiber.Ctx) error {
-	items, err := h.uc.FindAll(c.Context())
+func (h *ItemHandler) FindAll(
+	c *fiber.Ctx,
+) error {
+
+	items, err := h.uc.FindAll(
+		c.Context(),
+	)
+
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(500).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
 	return c.JSON(items)
 }
 
-func (h *ItemHandler) FindByID(c *fiber.Ctx) error {
-	id, _ := strconv.Atoi(c.Params("id"))
+func (h *ItemHandler) FindByID(
+	c *fiber.Ctx,
+) error {
 
-	item, err := h.uc.FindByID(c.Context(), id)
+	id, err := strconv.Atoi(
+		c.Params("id"),
+	)
+
 	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "not found"})
+		return c.Status(400).JSON(
+			fiber.Map{
+				"error": "invalid id",
+			},
+		)
 	}
 
-	return c.JSON(item)
+	it, err := h.uc.FindByID(
+		c.Context(),
+		id,
+	)
+
+	if err != nil {
+		return c.Status(404).JSON(
+			fiber.Map{
+				"error": "item not found",
+			},
+		)
+	}
+
+	return c.JSON(it)
 }
 
-func (h *ItemHandler) Update(c *fiber.Ctx) error {
-	id, _ := strconv.Atoi(c.Params("id"))
+func (h *ItemHandler) Update(
+	c *fiber.Ctx,
+) error {
 
-	var req struct {
-		Name      string  `json:"name"`
-		PriceSell float64 `json:"price_sell"`
+	id, err := strconv.Atoi(
+		c.Params("id"),
+	)
+
+	if err != nil {
+		return c.Status(400).JSON(
+			fiber.Map{
+				"error": "invalid id",
+			},
+		)
 	}
+
+	var req item.Item
 
 	if err := c.BodyParser(&req); err != nil {
-		return err
+		return c.Status(400).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
-	err := h.uc.Update(c.Context(), &domain.Item{
-		ID:        id,
-		Name:      req.Name,
-		PriceSell: req.PriceSell,
-	})
+	req.ID = id
+
+	err = h.uc.Update(
+		c.Context(),
+		&req,
+	)
+
 	if err != nil {
-		return err
+		return c.Status(500).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
-	return c.JSON(fiber.Map{"message": "updated"})
+	return c.JSON(
+		fiber.Map{
+			"message": "item updated",
+		},
+	)
 }
 
-func (h *ItemHandler) Delete(c *fiber.Ctx) error {
-	id, _ := strconv.Atoi(c.Params("id"))
+func (h *ItemHandler) Delete(
+	c *fiber.Ctx,
+) error {
 
-	err := h.uc.Delete(c.Context(), id)
+	id, err := strconv.Atoi(
+		c.Params("id"),
+	)
+
 	if err != nil {
-		return err
+		return c.Status(400).JSON(
+			fiber.Map{
+				"error": "invalid id",
+			},
+		)
 	}
 
-	return c.JSON(fiber.Map{"message": "deleted"})
+	err = h.uc.Delete(
+		c.Context(),
+		id,
+	)
+
+	if err != nil {
+		return c.Status(500).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
+	}
+
+	return c.JSON(
+		fiber.Map{
+			"message": "item deleted",
+		},
+	)
 }

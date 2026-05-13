@@ -60,11 +60,34 @@ func (r *itemRepository) FindByID(ctx context.Context, id int) (*item.Item, erro
 	return &it, nil
 }
 
-func (r *itemRepository) Update(ctx context.Context, it *item.Item) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE items SET name=$1, price_sell=$2, updated_at=NOW() WHERE id=$3`,
-		it.Name, it.PriceSell, it.ID,
+func (r *itemRepository) Update(
+	ctx context.Context,
+	it *item.Item,
+) error {
+
+	query := `
+	UPDATE items
+	SET
+		name = $1,
+		sku = $2,
+		barcode = $3,
+		price_sell = $4,
+		price_buy = $5,
+		updated_at = NOW()
+	WHERE id = $6
+	`
+
+	_, err := r.db.Exec(
+		ctx,
+		query,
+		it.Name,
+		it.SKU,
+		it.Barcode,
+		it.PriceSell,
+		it.PriceBuy,
+		it.ID,
 	)
+
 	return err
 }
 
