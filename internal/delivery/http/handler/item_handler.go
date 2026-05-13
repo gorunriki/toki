@@ -30,6 +30,12 @@ func (h *ItemHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	if req.Name == "" || req.SKU == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "name and sku required",
+		})
+	}
+
 	err := h.uc.Create(c.Context(), &domain.Item{
 		Name:      req.Name,
 		SKU:       req.SKU,

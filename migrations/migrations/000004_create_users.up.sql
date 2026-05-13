@@ -1,0 +1,8 @@
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150),
+    email VARCHAR(150) UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'cashier',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
