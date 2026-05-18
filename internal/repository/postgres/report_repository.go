@@ -45,8 +45,8 @@ func (r *reportRepository) GetStocks(
 		var rep report.StockReport
 
 		err := rows.Scan(
-			&rep.ItemID,
-			&rep.ItemName,
+			&rep.ID,
+			&rep.Name,
 			&rep.PriceSell,
 			&rep.Stock,
 		)
@@ -130,8 +130,8 @@ func (r *reportRepository) GetTopSelling(
 		var rep report.TopSellingItem
 
 		err := rows.Scan(
-			&rep.ItemID,
-			&rep.ItemName,
+			&rep.ID,
+			&rep.Name,
 			&rep.TotalSold,
 		)
 

@@ -1,8 +1,8 @@
 package report
 
 type StockReport struct {
-	ItemID    int     `json:"item_id"`
-	ItemName  string  `json:"item_name"`
+	ID        int     `json:"id"`
+	Name      string  `json:"name"`
 	PriceSell float64 `json:"price_sell"`
 	Stock     int     `json:"stock"`
 }
@@ -13,7 +13,7 @@ type DailySalesReport struct {
 }
 
 type TopSellingItem struct {
-	ItemID    int    `json:"item_id"`
-	ItemName  string `json:"item_name"`
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
 	TotalSold int    `json:"total_sold"`
 }
